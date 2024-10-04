@@ -19,7 +19,8 @@ module ActiveMerchant
         refund: '/refundTransaction',
         void: '/voidTransaction',
         general_credit: '/payout',
-        init_payment: '/initPayment'
+        init_payment: '/initPayment',
+        get_transaction_details: '/getTransactionDetails'
       }
 
       NETWORK_TOKENIZATION_CARD_MAPPING = {
@@ -121,6 +122,17 @@ module ActiveMerchant
           storedCredentialsMode: stored_credentials_mode
         }
         post[:isRebilling] = stored_credentials_mode
+      end
+
+      # https://docs.nuvei.com/api/main/indexMain_v1_0.html?json#getTransactionDetails
+      def get_transaction_details(transaction_id)
+        post = { transactionId: transaction_id }
+        build_post_data(post)
+
+        post.delete(:clientUniqueId)
+        post.delete(:clientRequestId)
+
+        commit(:get_transaction_details, post)
       end
 
       def set_reason_type(post, options)
@@ -335,6 +347,9 @@ module ActiveMerchant
         keys = case action
                when :authenticate
                  [:timeStamp]
+               when :get_transaction_details
+                 # common_keys -= [:clientRequestId]
+                 [:transactionId, :timeStamp]
                when :capture, :refund, :void
                  %i[clientUniqueId amount currency relatedTransactionId timeStamp]
                else
