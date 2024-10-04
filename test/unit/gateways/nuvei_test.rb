@@ -51,6 +51,8 @@ class NuveiTest < Test::Unit::TestCase
       timeStamp: 'test_time_stamp'
     }
 
+    @bank_account = check()
+
     @apple_pay_card = network_tokenization_credit_card(
       '5204 2452 5046 0049',
       payment_cryptogram: 'EHuWW9PiBkWvqE5juRwDzAUFBAk=',
@@ -280,6 +282,19 @@ class NuveiTest < Test::Unit::TestCase
         assert_match(/RECURRING/, json_data['authenticationOnlyType'])
       end
     end.respond_with(successful_purchase_response)
+  end
+
+  def test_successful_authorize_bank_account
+    stub_comms(@gateway, :ssl_request) do
+      @gateway.authorize(1.25, @bank_account, @options)
+    end.check_request(skip_response: true) do |_method, endpoint, data, _headers|
+      json_data = JSON.parse(data)
+      if /payment/.match?(endpoint)
+        assert_equal('apmgw_ACH', json_data['paymentOption']['alternativePaymentMethod']['paymentMethod'])
+        assert_match(/#{@bank_account.routing_number}/, json_data['paymentOption']['alternativePaymentMethod']['RoutingNumber'])
+        assert_match(/#{@bank_account.account_number}/, json_data['paymentOption']['alternativePaymentMethod']['AccountNumber'])
+      end
+    end
   end
 
   def test_successful_purchase_with_apple_pay

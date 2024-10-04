@@ -19,6 +19,8 @@ class RemoteNuveiTest < Test::Unit::TestCase
       user_token_id: '123456'
     }
 
+    @bank_account = check(account_number: '111111111', routing_number: '999999992')
+
     @three_ds_options = {
       execute_threed: true,
       redirect_url: 'http://www.example.com/redirect',
@@ -287,6 +289,13 @@ class RemoteNuveiTest < Test::Unit::TestCase
     recurring_response = @gateway.purchase(@amount, @credit_card, stored_credential_options)
     assert_success recurring_response
     assert_match 'SUCCESS', recurring_response.params['status']
+  end
+
+  def test_successful_authorize_with_bank_account
+    @options.update(billing_address: address.merge(country: 'US', state: 'MA'))
+    response = @gateway.authorize(1.25, @bank_account, @options)
+    assert_success response
+    assert_match 'PENDING', response.message
   end
 
   def test_successful_purchase_with_apple_pay
