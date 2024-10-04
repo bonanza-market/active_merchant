@@ -22,6 +22,11 @@ module ActiveMerchant
         init_payment: '/initPayment'
       }
 
+      NETWORK_TOKENIZATION_CARD_MAPPING = {
+        'apple_pay' => 'ApplePay',
+        'google_pay' => 'GooglePay'
+      }
+
       def initialize(options = {})
         requires!(options, :merchant_id, :merchant_site_id, :secret_key)
         super
@@ -148,7 +153,8 @@ module ActiveMerchant
           gsub(%r(("cardCvv\\?":\\?")\d+), '\1[FILTERED]').
           gsub(%r(("merchantId\\?":\\?")\d+), '\1[FILTERED]').
           gsub(%r(("merchantSiteId\\?":\\?")\d+), '\1[FILTERED]').
-          gsub(%r(("merchantKey\\?":\\?")\d+), '\1[FILTERED]')
+          gsub(%r(("merchantKey\\?":\\?")\d+), '\1[FILTERED]').
+          gsub(%r(("cryptogram\\?":\\?")[^"\\]*)i, '\1[FILTERED]')
       end
 
       private
@@ -181,9 +187,20 @@ module ActiveMerchant
       end
 
       def add_payment_method(post, payment, key, options = {})
-        payment_data = payment.is_a?(CreditCard) ? credit_card_hash(payment) : payment
+        payment_data = payment.is_a?(CreditCard) || payment.is_a?(NetworkTokenizationCreditCard) ? credit_card_hash(payment) : payment
+        if payment.is_a?(NetworkTokenizationCreditCard)
+          payment_data[:brand] = payment.brand.upcase
 
-        if payment.is_a?(CreditCard)
+          external_token = {}
+          external_token[:externalTokenProvider] = NETWORK_TOKENIZATION_CARD_MAPPING[payment.source.to_s]
+          external_token[:cryptogram] = payment.payment_cryptogram if payment.payment_cryptogram
+          external_token[:eciProvider] = payment.eci if payment.eci
+
+          payment_data.slice!(:cardNumber, :expirationMonth, :expirationYear, :last4Digits, :brand, :CVV)
+
+          post[:paymentOption] = { card: payment_data.merge(externalToken: external_token) }
+
+        elsif payment.is_a?(CreditCard)
           post[key] = key == :paymentOption ? { card: payment_data } : payment_data
         else
           post[key] = {
@@ -257,23 +274,23 @@ module ActiveMerchant
             challengeWindowSize: options[:browser_size],
             challengePreference: challenge_preference
           }.compact,
-        browserDetails: {
-          acceptHeader: browser_info_3ds[:accept_header],
-          ip: options[:ip],
-          javaEnabled: browser_info_3ds[:java],
-          javaScriptEnabled: browser_info_3ds[:javascript] || false,
-          language: browser_info_3ds[:language],
-          colorDepth: browser_info_3ds[:depth], # Possible values: 1, 4, 8, 15, 16, 24, 32, 48
-          screenHeight: browser_info_3ds[:height],
-          screenWidth: browser_info_3ds[:width],
-          timeZone: browser_info_3ds[:timezone],
-          userAgent: browser_info_3ds[:user_agent]
-        }.compact,
-        notificationURL: (options[:notification_url] || options[:callback_url]),
-        merchantURL: options[:merchant_url], # The URL of the merchant's fully qualified website.
-        version: options[:version], # returned from initPayment
-        methodCompletionInd: 'U', # to indicate "unavailable".
-        platformType: '02' # browser instead of app-based (app-based is only for SDK implementation)
+          browserDetails: {
+            acceptHeader: browser_info_3ds[:accept_header],
+            ip: options[:ip],
+            javaEnabled: browser_info_3ds[:java],
+            javaScriptEnabled: browser_info_3ds[:javascript] || false,
+            language: browser_info_3ds[:language],
+            colorDepth: browser_info_3ds[:depth], # Possible values: 1, 4, 8, 15, 16, 24, 32, 48
+            screenHeight: browser_info_3ds[:height],
+            screenWidth: browser_info_3ds[:width],
+            timeZone: browser_info_3ds[:timezone],
+            userAgent: browser_info_3ds[:user_agent]
+          }.compact,
+          notificationURL: (options[:notification_url] || options[:callback_url]),
+          merchantURL: options[:merchant_url], # The URL of the merchant's fully qualified website.
+          version: options[:version], # returned from initPayment
+          methodCompletionInd: 'U', # to indicate "unavailable".
+          platformType: '02' # browser instead of app-based (app-based is only for SDK implementation)
         }.compact
       end
 
