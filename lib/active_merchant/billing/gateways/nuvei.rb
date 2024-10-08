@@ -15,6 +15,7 @@ module ActiveMerchant
       ENDPOINTS_MAPPING = {
         authenticate: '/getSessionToken',
         purchase: '/payment', # /authorize with transactionType: "Auth"
+        open_order: '/openOrder',
         capture: '/settleTransaction',
         refund: '/refundTransaction',
         void: '/voidTransaction',
@@ -51,6 +52,17 @@ module ActiveMerchant
         else
           commit(:purchase, post)
         end
+      end
+
+      def open_order(money, options = {})
+        fetch_session_token
+
+        post = { transactionType: "Sale", savePM: false }
+
+        build_post_data(post)
+        add_amount(post, money, options)
+
+        commit(:open_order, post)
       end
 
       def purchase(money, payment, options = {})
@@ -134,6 +146,9 @@ module ActiveMerchant
 
         commit(:get_transaction_details, post)
       end
+
+      # mostly used by UI to get session token
+      alias generate_session_token fetch_session_token
 
       def set_reason_type(post, options)
         reason_type = options[:stored_credential][:reason_type]
@@ -350,7 +365,7 @@ module ActiveMerchant
                when :get_transaction_details
                  # common_keys -= [:clientRequestId]
                  [:transactionId, :timeStamp]
-               when :capture, :refund, :void
+               when :capture, :refund, :void, :open_order
                  %i[clientUniqueId amount currency relatedTransactionId timeStamp]
                else
                  %i[amount currency timeStamp]

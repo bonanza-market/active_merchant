@@ -10,3 +10,8 @@ Gemfile*.lock
 .rvmrc
 /doc/
 .ruby-version
+/.idea/.gitignore
+/.idea/active_merchant.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/vcs.xml
