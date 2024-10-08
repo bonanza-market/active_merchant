@@ -21,6 +21,7 @@ module ActiveMerchant
         void: '/voidTransaction',
         general_credit: '/payout',
         init_payment: '/initPayment',
+        get_payment_status: '/getPaymentStatus',
         get_transaction_details: '/getTransactionDetails'
       }
 
@@ -63,6 +64,12 @@ module ActiveMerchant
         add_amount(post, money, options)
 
         commit(:open_order, post)
+      end
+
+      def get_payment_status(session_id)
+        commit(:get_payment_status, {
+          sessionToken: session_id,
+        })
       end
 
       def purchase(money, payment, options = {})
@@ -403,8 +410,8 @@ module ActiveMerchant
       end
 
       def commit(action, post, authorization = nil, method = :post)
-        post[:sessionToken] = @options[:session_token] unless %i(capture refund).include?(action)
-        post[:checksum] = calculate_checksum(post, action)
+        post[:sessionToken] = @options[:session_token] unless %i(capture refund get_payment_status).include?(action)
+        post[:checksum] = calculate_checksum(post, action) unless %i(get_payment_status).include?(action)
 
         response = parse(ssl_request(method, url(action, authorization), post.to_json, headers))
 
