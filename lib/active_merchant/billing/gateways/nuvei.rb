@@ -353,8 +353,8 @@ module ActiveMerchant
         post[:merchantId] = @options[:merchant_id]
         post[:merchantSiteId] = @options[:merchant_site_id]
         post[:timeStamp] = current_timestamp.to_i
-        post[:clientRequestId] = SecureRandom.uuid
-        post[:clientUniqueId] = SecureRandom.hex(16)
+        post[:clientRequestId] = @options[:client_request_id].presence || SecureRandom.uuid
+        post[:clientUniqueId] = @options[:client_unique_id].presence || SecureRandom.hex(16)
       end
 
       def calculate_checksum(post, action)
