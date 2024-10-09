@@ -12,6 +12,8 @@ module ActiveMerchant
       self.homepage_url = 'https://www.nuvei.com/'
       self.display_name = 'Nuvei'
 
+      attr_reader :last_session_request_response
+
       ENDPOINTS_MAPPING = {
         authenticate: '/getSessionToken',
         purchase: '/payment', # /authorize with transactionType: "Auth"
@@ -34,6 +36,12 @@ module ActiveMerchant
         requires!(options, :merchant_id, :merchant_site_id, :secret_key)
         super
         fetch_session_token unless session_token_valid?
+      end
+
+      def generate_session_token(force_new = false, post = {})
+        @last_session_request_response = nil if force_new
+
+        last_session_request_response  || fetch_session_token(post)
       end
 
       def authorize(money, payment, options = {}, transaction_type = 'Auth')
@@ -153,9 +161,6 @@ module ActiveMerchant
 
         commit(:get_transaction_details, post)
       end
-
-      # mostly used by UI to get session token
-      alias generate_session_token fetch_session_token
 
       def set_reason_type(post, options)
         reason_type = options[:stored_credential][:reason_type]
@@ -400,7 +405,7 @@ module ActiveMerchant
 
       def fetch_session_token(post = {})
         build_post_data(post)
-        send_session_request(post)
+        @last_session_request_response = send_session_request(post)
       end
 
       def session_token_valid?
