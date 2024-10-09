@@ -377,7 +377,9 @@ module ActiveMerchant
                when :get_transaction_details
                  # common_keys -= [:clientRequestId]
                  [:transactionId, :timeStamp]
-               when :capture, :refund, :void, :open_order
+               when :open_order
+                 %i[amount currency timeStamp]
+               when :capture, :refund, :void
                  %i[clientUniqueId amount currency relatedTransactionId timeStamp]
                else
                  %i[amount currency timeStamp]
@@ -421,7 +423,7 @@ module ActiveMerchant
         response = parse(ssl_request(method, url(action, authorization), post.to_json, headers))
 
         Response.new(
-          success_from(response),
+          success_from(response, check_transaction_status: action != :open_order),
           message_from(response),
           response,
           authorization: authorization_from(action, response, post),
@@ -461,8 +463,8 @@ module ActiveMerchant
         }.with_indifferent_access
       end
 
-      def success_from(response)
-        response[:status] == 'SUCCESS' && (response[:transactionStatus] == 'APPROVED' || response[:transactionStatus] == 'PENDING' || response[:transactionStatus] == 'REDIRECT')
+      def success_from(response, check_transaction_status: true)
+        response[:status] == 'SUCCESS' && (!check_transaction_status || response[:transactionStatus] == 'APPROVED' || response[:transactionStatus] == 'PENDING' || response[:transactionStatus] == 'REDIRECT')
       end
 
       def authorization_from(action, response, post)
