@@ -70,6 +70,7 @@ module ActiveMerchant
 
         build_post_data(post)
         add_amount(post, money, options)
+        add_additional_fields(post, options, [ :billingAddress, :userDetails, :shippingAddress, :urlDetails, :merchantDetails, :amountDetails, :companyDetails, :customData ])
 
         commit(:open_order, post)
       end
@@ -220,6 +221,12 @@ module ActiveMerchant
       def add_amount(post, money, options)
         post[:amount] = amount(money)
         post[:currency] = (options[:currency] || currency(money))
+      end
+
+      def add_additional_fields(post, options, fields_to_add)
+        fields_to_add.each do |field|
+          post[field] = options[field] unless options[field].nil?
+        end
       end
 
       def credit_card_hash(payment)
