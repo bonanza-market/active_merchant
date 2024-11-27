@@ -471,7 +471,8 @@ module ActiveMerchant
       end
 
       def success_from(response, check_transaction_status: true)
-        response[:status] == 'SUCCESS' && (!check_transaction_status || response[:transactionStatus] == 'APPROVED' || response[:transactionStatus] == 'PENDING' || response[:transactionStatus] == 'REDIRECT')
+        transaction_status = response[:transactionStatus] || response[:transactionDetails]&.dig(:transactionStatus)&.upcase
+        response[:status] == 'SUCCESS' && (!check_transaction_status || transaction_status == 'APPROVED' || transaction_status == 'PENDING' || transaction_status == 'REDIRECT')
       end
 
       def authorization_from(action, response, post)
