@@ -70,7 +70,7 @@ module ActiveMerchant
 
         build_post_data(post)
         add_amount(post, money, options)
-        add_additional_fields(post, options, [ :billingAddress, :userDetails, :shippingAddress, :urlDetails, :merchantDetails, :amountDetails, :companyDetails, :customData ])
+        add_additional_fields(post, options, [ :billingAddress, :userDetails, :shippingAddress, :urlDetails, :merchantDetails, :amountDetails, :companyDetails, :customData, :authenticationOnlyType ])
 
         commit(:open_order, post)
       end
