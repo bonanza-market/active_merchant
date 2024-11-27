@@ -63,10 +63,10 @@ module ActiveMerchant
         end
       end
 
-      def open_order(money, options = {})
+      def open_order(money, options = {}, isAuth = false)
         fetch_session_token
 
-        post = { transactionType: "Sale", savePM: false }
+        post = { transactionType: isAuth ? "Auth" : "Sale", savePM: false }
 
         build_post_data(post)
         add_amount(post, money, options)
