@@ -279,7 +279,11 @@ module ActiveMerchant
         else
           post[key] = {
             userPaymentOptionId: payment_data,
-            card: { CVV: options[:cvv_code] }
+            card: {
+              CVV: options[:cvv_code],
+              expirationYear: options[:expiration_year],
+              expirationMonth: options[:expiration_month]
+            }
           }
         end
       end
