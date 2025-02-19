@@ -400,7 +400,7 @@ module ActiveMerchant
                end
 
         to_sha = post.values_at(*common_keys.concat(keys))
-        if action == "capture"
+        if action == :capture
           if post.dig(:urlDetails, :notificationUrl)
             to_sha.push(post.dig(:urlDetails, :notificationUrl))
           end
