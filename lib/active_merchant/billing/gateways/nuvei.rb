@@ -91,6 +91,7 @@ module ActiveMerchant
 
         build_post_data(post)
         add_amount(post, money, options)
+        add_additional_fields(post, options, [ :urlDetails ])
 
         commit(:capture, post)
       end
