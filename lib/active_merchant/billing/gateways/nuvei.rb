@@ -406,9 +406,8 @@ module ActiveMerchant
           end
           to_sha.push(post[:timeStamp])
         end
-        to_sha.push(@options[:secret_key]).join
 
-        Digest::SHA256.hexdigest(to_sha)
+        Digest::SHA256.hexdigest(to_sha.push(@options[:secret_key]).join)
       end
 
       def send_session_request(post)
