@@ -391,13 +391,23 @@ module ActiveMerchant
                  [:transactionId, :timeStamp]
                when :open_order
                  %i[amount currency timeStamp]
-               when :capture, :refund, :void
+               when :capture
+                 %i[clientUniqueId amount currency relatedTransactionId] # timeStamp will be added later
+               when :refund, :void
                  %i[clientUniqueId amount currency relatedTransactionId timeStamp]
                else
                  %i[amount currency timeStamp]
                end
 
-        to_sha = post.values_at(*common_keys.concat(keys)).push(@options[:secret_key]).join
+        to_sha = post.values_at(*common_keys.concat(keys))
+        if action == "capture"
+          if post.dig(:urlDetails, :notificationUrl)
+            to_sha.push(post.dig(:urlDetails, :notificationUrl))
+          end
+          to_sha.push(post[:timeStamp])
+        end
+        to_sha.push(@options[:secret_key]).join
+
         Digest::SHA256.hexdigest(to_sha)
       end
 
